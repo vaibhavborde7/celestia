@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
 
 const statusStyles = {
@@ -12,6 +12,21 @@ export default function CelestiaNode({ id, data }: any) {
   const { setNodes, setEdges } = useReactFlow();
 
   const [hovered, setHovered] = useState(false);
+const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+
+const handleMouseEnter = () => {
+  hoverTimeout.current = setTimeout(() => {
+    setHovered(true);
+  }, 1800); // delay hover
+};
+
+const handleMouseLeave = () => {
+  if (hoverTimeout.current) {
+    clearTimeout(hoverTimeout.current);
+    hoverTimeout.current = null;
+  }
+  setHovered(false);
+};
   const [editing, setEditing] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -68,15 +83,24 @@ export default function CelestiaNode({ id, data }: any) {
       <Handle
         type="target"
         position={Position.Top}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          border: "1px solid white",
+          marginTop: -10,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          boxShadow: "0 0 0 2px #3b82f6",
+          transition: "width 0.2s, height 0.2s",
+        }}
+        className="transition-all duration-200 reactflow-handle-custom"
       />
 
       <div
-        onMouseEnter={() =>
-          setHovered(true)
-        }
-        onMouseLeave={() =>
-          !editing && setHovered(false)
-        }
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onClick={(e) => {
           e.stopPropagation();
           setEditing(true);
@@ -108,7 +132,32 @@ export default function CelestiaNode({ id, data }: any) {
           }
         `}
       >
-        <div className="p-4">
+        <div className="p-4 relative">
+          {/* Collapse/close button */}
+          {(hovered || editing) && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                setHovered(false);
+                setEditing(false);
+              }}
+              className={`
+                absolute top-3 right-3 z-20
+                w-7 h-7 flex items-center justify-center
+                rounded-full
+                text-lg
+                ${data.theme === "dark"
+                  ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  : "bg-zinc-200 hover:bg-zinc-300 text-zinc-600"
+                }
+                transition
+              `}
+              tabIndex={-1}
+              aria-label="Collapse"
+            >
+              ×
+            </button>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="font-semibold truncate">
@@ -186,67 +235,52 @@ export default function CelestiaNode({ id, data }: any) {
                 <>
                   <input
                     value={title}
-                    onClick={(e) =>
-                      e.stopPropagation()
-                    }
-                    onChange={(e) =>
-                      setTitle(
-                        e.target.value
-                      )
-                    }
-                    className="
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className={`
                       w-full
                       p-2
                       rounded-lg
-                      bg-zinc-800
-                      text-white
                       border
-                      border-zinc-700
-                    "
+                      ${data.theme === "dark"
+                        ? "bg-zinc-800 text-white border-zinc-700"
+                        : "bg-zinc-100 text-black border-zinc-300"
+                      }
+                    `}
                   />
 
                   <textarea
                     value={description}
-                    onClick={(e) =>
-                      e.stopPropagation()
-                    }
-                    onChange={(e) =>
-                      setDescription(
-                        e.target.value
-                      )
-                    }
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="
+                    className={`
                       w-full
                       p-2
                       rounded-lg
-                      bg-zinc-800
-                      text-white
                       border
-                      border-zinc-700
-                    "
+                      ${data.theme === "dark"
+                        ? "bg-zinc-800 text-white border-zinc-700"
+                        : "bg-zinc-100 text-black border-zinc-300"
+                      }
+                    `}
                   />
 
                   <input
                     type="date"
                     value={date}
-                    onClick={(e) =>
-                      e.stopPropagation()
-                    }
-                    onChange={(e) =>
-                      setDate(
-                        e.target.value
-                      )
-                    }
-                    className="
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setDate(e.target.value)}
+                    className={`
                       w-full
                       p-2
                       rounded-lg
-                      bg-zinc-800
-                      text-white
                       border
-                      border-zinc-700
-                    "
+                      ${data.theme === "dark"
+                        ? "bg-zinc-800 text-white border-zinc-700"
+                        : "bg-zinc-100 text-black border-zinc-300"
+                      }
+                    `}
                   />
 
                   <div>
@@ -322,6 +356,19 @@ export default function CelestiaNode({ id, data }: any) {
       <Handle
         type="source"
         position={Position.Bottom}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          border: "1px solid white",
+          marginBottom: -10,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          boxShadow: "0 0 0 2px #3b82f6",
+          transition: "width 0.2s, height 0.2s",
+        }}
+        className="transition-all duration-200 reactflow-handle-custom"
       />
     </>
   );

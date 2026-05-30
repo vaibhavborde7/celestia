@@ -320,18 +320,7 @@ const onDeleteEdge = (id: string) => {
       gap-2
     "
   >
-    <button
-      onClick={createNode}
-      className="
-        px-4
-        py-2
-        bg-blue-500
-        text-white
-        rounded-lg
-      "
-    >
-      Add Node
-    </button>
+ 
 
     <button
       onClick={() => {
@@ -361,32 +350,32 @@ const onDeleteEdge = (id: string) => {
 
         URL.revokeObjectURL(url);
       }}
-     className={`
-  px-4
-  py-2
-  rounded-lg
-  ${
-    theme === "dark"
-      ? "bg-zinc-700 text-white"
-      : "bg-white text-black border border-zinc-300"
-  }
-`}
+      className={`
+    px-4
+    py-2
+    rounded-lg
+    border
+    ${theme === "dark"
+      ? "bg-zinc-700 text-white border-transparent hover:border-white"
+      : "bg-white text-black border-zinc-300 hover:border-black"
+    }
+    transition
+  `}
     >
       Export
     </button>
     <button
-  onClick={() =>
-    fileInputRef.current?.click()
-  }
+  onClick={() => fileInputRef.current?.click()}
   className={`
     px-4
     py-2
     rounded-lg
-    ${
-      theme === "dark"
-        ? "bg-zinc-700 text-white"
-        : "bg-white text-black border border-zinc-300"
+    border
+    ${theme === "dark"
+      ? "bg-zinc-700 text-white border-transparent hover:border-white"
+      : "bg-white text-black border-zinc-300 hover:border-black"
     }
+    transition
   `}
 >
   Import
@@ -548,11 +537,30 @@ const onDeleteEdge = (id: string) => {
         <MiniMap
   pannable
   zoomable
+  nodeColor={n =>
+    theme === "dark"
+      ? n.data?.status === "complete"
+        ? "#22c55e" // green-500
+        : n.data?.status === "active"
+        ? "#eab308" // yellow-500
+        : "#71717a" // zinc-500
+      : n.data?.status === "complete"
+        ? "#22c55e"
+        : n.data?.status === "active"
+        ? "#eab308"
+        : "#a1a1aa"
+  }
+  nodeStrokeWidth={3}
+  maskColor={theme === "dark" ? "rgba(24,24,27,0.85)" : "rgba(255,255,255,0.85)"}
   style={{
-    background:
-      theme === "dark"
-        ? "#111"
-        : "#fff",
+    background: theme === "dark" ? "#18181b" : "#f4f4f5",
+    borderRadius: 12,
+    boxShadow: "0 2px 12px 0 rgba(0,0,0,0.10)",
+    border: theme === "dark" ? "1px solid #27272a" : "1px solid #e5e7eb",
+    width: 180,
+    height: 120,
+    right: 16,
+    bottom: 16,
   }}
 />
       </ReactFlow>
