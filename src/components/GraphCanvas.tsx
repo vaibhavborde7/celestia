@@ -98,8 +98,17 @@ useEffect(() => {
     }
 
     if (savedEdges) {
-      setEdges(JSON.parse(savedEdges));
-    }
+  setEdges(
+    JSON.parse(savedEdges).map((edge: any) => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        onUpdateEdge,
+        onDeleteEdge,
+      },
+    }))
+  );
+}
 
     setLoaded(true);
   }, [setNodes, setEdges]);
@@ -165,35 +174,33 @@ useEffect(() => {
   expanded: false,
   theme,
 
-  onUpdateNode,
-  onDeleteNode,
+  
 }
     },
   ]);
 };
-const onConnect = useCallback(
-  (params: any) => {
-    setEdges((eds) =>
-      addEdge(
-        {
-          ...params,
-          type: "celestia",
+const onConnect = useCallback((params: any) => {
+  const id = `${params.source}-${params.target}-${Date.now()}`;
 
-          data: {
-            label: "1 day",
-            relationship: "",
-            notes: "",
-
-            onUpdateEdge,
-            onDeleteEdge,
-          },
+  setEdges((eds) =>
+    addEdge(
+      {
+        ...params,
+        id,
+        type: "celestia",
+        data: {
+          label: "1 day",
+          relationship: "",
+          notes: "",
+          expanded: false,
+          onUpdateEdge,
+          onDeleteEdge,
         },
-        eds
-      )
-    );
-  },
-  [setEdges]
-);
+      },
+      eds
+    )
+  );
+}, []);
  
   const createNode = () => {
     const id = Date.now().toString();
@@ -214,8 +221,7 @@ const onConnect = useCallback(
   expanded: false,
   theme,
 
-  onUpdateNode,
-  onDeleteNode,
+
 }
     };
 
@@ -261,10 +267,7 @@ const onDeleteNode = (
   );
 };
 
-const onUpdateEdge = (
-  id: string,
-  updatedData: any
-) => {
+const onUpdateEdge = (id: string, updated: any) => {
   setEdges((eds) =>
     eds.map((edge) =>
       edge.id === id
@@ -272,9 +275,7 @@ const onUpdateEdge = (
             ...edge,
             data: {
               ...edge.data,
-              ...updatedData,
-               onUpdateEdge,
-      onDeleteEdge,
+              ...updated,
             },
           }
         : edge
@@ -282,13 +283,9 @@ const onUpdateEdge = (
   );
 };
 
-const onDeleteEdge = (
-  id: string
-) => {
+const onDeleteEdge = (id: string) => {
   setEdges((eds) =>
-    eds.filter(
-      (edge) => edge.id !== id
-    )
+    eds.filter((edge) => edge.id !== id)
   );
 };
 
@@ -455,7 +452,7 @@ const onDeleteEdge = (
   );
 }
 
-        if (graph.edges) {
+   if (graph.edges) {
   setEdges(
     graph.edges.map((edge: any) => ({
       ...edge,
@@ -464,9 +461,9 @@ const onDeleteEdge = (
         relationship: "",
         notes: "",
         expanded: false,
+        onUpdateEdge,
+        onDeleteEdge,
         ...edge.data,
-         onUpdateEdge,
-      onDeleteEdge,
       },
     }))
   );
@@ -529,6 +526,7 @@ const onDeleteEdge = (
   edges={edges}
   nodeTypes={nodeTypes}
   edgeTypes={edgeTypes}
+  key={`flow-${theme}`}
   fitView
   onNodesChange={onNodesChange}
   onEdgesChange={onEdgesChange}

@@ -1,86 +1,67 @@
-"use client";
-
+"use client"
 import { useEffect, useState } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position, useReactFlow } from "reactflow";
 
 const statusStyles = {
-  new: {
-    label: "New",
-    dot: "bg-zinc-500",
-    ring: "",
-  },
-  active: {
-    label: "Active",
-    dot: "bg-yellow-500",
-    ring: "ring-2 ring-yellow-500/40",
-  },
-  complete: {
-    label: "Complete",
-    dot: "bg-green-500",
-    ring: "ring-2 ring-green-500/40",
-  },
+  new: { label: "New", dot: "bg-zinc-500", ring: "" },
+  active: { label: "Active", dot: "bg-yellow-500", ring: "ring-2 ring-yellow-500/40" },
+  complete: { label: "Complete", dot: "bg-green-500", ring: "ring-2 ring-green-500/40" },
 };
 
-export default function CelestiaNode({
-  id,
-  data,
-}: any) {
-  const [hovered, setHovered] =
-    useState(false);
+export default function CelestiaNode({ id, data }: any) {
+  const { setNodes, setEdges } = useReactFlow();
 
-  const [editing, setEditing] =
-    useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
 
-  const [title, setTitle] =
-    useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [progress, setProgress] = useState(0);
 
-  const [description, setDescription] =
-    useState("");
-
-  const [date, setDate] =
-    useState("");
-
-  const [progress, setProgress] =
-    useState(0);
-
+  // stable sync
   useEffect(() => {
-    setTitle(data.title || "");
-    setDescription(
-      data.description || ""
-    );
-    setDate(data.date || "");
-    setProgress(
-      data.progress || 0
-    );
+    setTitle(data?.title ?? "");
+    setDescription(data?.description ?? "");
+    setDate(data?.date ?? "");
+    setProgress(data?.progress ?? 0);
   }, [data]);
 
   const status =
-    progress === 100
-      ? "complete"
-      : progress > 0
-      ? "active"
-      : "new";
+    progress === 100 ? "complete" : progress > 0 ? "active" : "new";
 
-  const style =
-    statusStyles[
-      status as keyof typeof statusStyles
-    ];
+  const style = statusStyles[status];
 
   const saveNode = () => {
-    data.onUpdateNode?.(id, {
-      title,
-      description,
-      date,
-      progress,
-      status,
-    });
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                title,
+                description,
+                date,
+                progress,
+                status,
+              },
+            }
+          : node
+      )
+    );
 
     setEditing(false);
   };
 
   const deleteNode = () => {
-    data.onDeleteNode?.(id);
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+
+    setEdges((eds) =>
+      eds.filter((e) => e.source !== id && e.target !== id)
+    );
   };
+
 
   return (
     <>
