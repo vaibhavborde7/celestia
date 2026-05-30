@@ -15,14 +15,13 @@ import ReactFlow, {
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow
 } from "reactflow";
 
 import "reactflow/dist/style.css";
 
 import CelestiaNode from "./CelestiaNode";
-import NodeDrawer from "./NodeDrawer";
 import CelestiaEdge from "./CelestiaEdge";
-import EdgeDrawer from "./EdgeDrawer";
 
 const nodeTypes = {
   celestia: CelestiaNode,
@@ -36,36 +35,35 @@ const defaultNodes = [
     id: "1",
     type: "celestia",
     position: { x: 0, y: 0 },
-    data: {
-      title: "Start",
-      description: "",
-      date: "",
-      status: "active",
-    },
+   data: {
+  title: "Start",
+  description: "",
+  date: "",
+  progress: 0,
+  status: "new",
+  expanded: false,
+  theme: "dark",
+},
   },
 ];
 
 function Flow() {
+  const { screenToFlowPosition } =
+  useReactFlow();
   const [contextMenu, setContextMenu] =
   useState<{
     x: number;
     y: number;
   } | null>(null);
-  const [selectedNode, setSelectedNode] =
-    useState<any>(null);
 
   const [nodes, setNodes, onNodesChange] =
     useNodesState(defaultNodes);
-
-  const [edges, setEdges, onEdgesChange] =
-    useEdgesState([]);
+const [edges, setEdges, onEdgesChange] =
+  useEdgesState<any>([]);
 const [theme, setTheme] =
   useState("dark");
   const [loaded, setLoaded] =
     useState(false);
-
-  const [selectedEdge, setSelectedEdge] =
-  useState<any>(null);
 
   useEffect(() => {
   const savedTheme =
@@ -105,7 +103,8 @@ useEffect(() => {
 
     setLoaded(true);
   }, [setNodes, setEdges]);
-
+  // ensure node status reflects progress whenever nodes change
+ 
   // Save nodes
   useEffect(() => {
     if (!loaded) return;
@@ -139,10 +138,16 @@ useEffect(() => {
 
   const fileInputRef =
   useRef<HTMLInputElement>(null);
-  const createNodeAtPosition = (
-  x: number,
-  y: number
+ const createNodeAtPosition = (
+  screenX: number,
+  screenY: number
 ) => {
+  const position =
+    screenToFlowPosition({
+      x: screenX,
+      y: screenY,
+    });
+
   const id = Date.now().toString();
 
   setNodes((nds) => [
@@ -150,29 +155,37 @@ useEffect(() => {
     {
       id,
       type: "celestia",
-      position: {
-        x,
-        y,
-      },
-      data: {
-        title: "Untitled",
-        description: "",
-        date: "",
-        status: "new",
-        theme,
-      },
+      position,
+     data: {
+  title: "Untitled",
+  description: "",
+  date: "",
+  progress: 0,
+  status: "new",
+  expanded: false,
+  theme,
+
+  onUpdateNode,
+  onDeleteNode,
+}
     },
   ]);
 };
- const onConnect = useCallback(
+const onConnect = useCallback(
   (params: any) => {
     setEdges((eds) =>
       addEdge(
         {
           ...params,
           type: "celestia",
+
           data: {
             label: "1 day",
+            relationship: "",
+            notes: "",
+
+            onUpdateEdge,
+            onDeleteEdge,
           },
         },
         eds
@@ -192,13 +205,18 @@ useEffect(() => {
         x: Math.random() * 400,
         y: Math.random() * 400,
       },
-      data: {
-        title: "Untitled",
-        description: "",
-        date: "",
-        status: "new",
-        theme,
-      },
+    data: {
+  title: "Untitled",
+  description: "",
+  date: "",
+  progress: 0,
+  status: "new",
+  expanded: false,
+  theme,
+
+  onUpdateNode,
+  onDeleteNode,
+}
     };
 
     setNodes((nds) => [
@@ -206,6 +224,73 @@ useEffect(() => {
       newNode,
     ]);
   };
+  const onUpdateNode = (
+  id: string,
+  updatedData: any
+) => {
+  setNodes((nds) =>
+    nds.map((node) =>
+      node.id === id
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              ...updatedData,
+            },
+          }
+        : node
+    )
+  );
+};
+
+const onDeleteNode = (
+  id: string
+) => {
+  setNodes((nds) =>
+    nds.filter(
+      (node) => node.id !== id
+    )
+  );
+
+  setEdges((eds) =>
+    eds.filter(
+      (edge) =>
+        edge.source !== id &&
+        edge.target !== id
+    )
+  );
+};
+
+const onUpdateEdge = (
+  id: string,
+  updatedData: any
+) => {
+  setEdges((eds) =>
+    eds.map((edge) =>
+      edge.id === id
+        ? {
+            ...edge,
+            data: {
+              ...edge.data,
+              ...updatedData,
+               onUpdateEdge,
+      onDeleteEdge,
+            },
+          }
+        : edge
+    )
+  );
+};
+
+const onDeleteEdge = (
+  id: string
+) => {
+  setEdges((eds) =>
+    eds.filter(
+      (edge) => edge.id !== id
+    )
+  );
+};
 
   return (
 
@@ -338,6 +423,7 @@ useEffect(() => {
   type="file"
   accept=".json"
   className="hidden"
+  
   onChange={(event) => {
     const file =
       event.target.files?.[0];
@@ -354,13 +440,37 @@ useEffect(() => {
             e.target?.result as string
           );
 
-        if (graph.nodes) {
-          setNodes(graph.nodes);
-        }
+       if (graph.nodes) {
+  setNodes(
+    graph.nodes.map((node: any) => ({
+      ...node,
+      data: {
+        progress: 0,
+        status: "new",
+        expanded: false,
+        theme,
+        ...node.data,
+      },
+    }))
+  );
+}
 
         if (graph.edges) {
-          setEdges(graph.edges);
-        }
+  setEdges(
+    graph.edges.map((edge: any) => ({
+      ...edge,
+      data: {
+        label: "1 day",
+        relationship: "",
+        notes: "",
+        expanded: false,
+        ...edge.data,
+         onUpdateEdge,
+      onDeleteEdge,
+      },
+    }))
+  );
+}
       } catch {
         alert(
           "Invalid graph file"
@@ -414,27 +524,20 @@ useEffect(() => {
   </div>
 )}
       <ReactFlow
-//       colorMode={
-//   theme === "dark"
-//     ? "dark"
-//     : "light"
-// }
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={(_, node) => {
-        setSelectedNode(node);
-        setSelectedEdge(null);
-        }}
-        onEdgeClick={(_, edge) => {
-        setSelectedEdge(edge);
-        setSelectedNode(null);
-        }}
+// <ReactFlow
+  nodes={nodes}
+  edges={edges}
+  nodeTypes={nodeTypes}
+  edgeTypes={edgeTypes}
+  fitView
+  onNodesChange={onNodesChange}
+  onEdgesChange={onEdgesChange}
+  onConnect={onConnect}
+  deleteKeyCode={["Backspace", "Delete"]}
+  defaultEdgeOptions={{
+    type: "celestia",
+  }}
+        
       >
         <Background
   color={
@@ -455,83 +558,6 @@ useEffect(() => {
   }}
 />
       </ReactFlow>
-
-      <NodeDrawer
-        theme={theme}
-        node={selectedNode}
-        onClose={() =>
-          setSelectedNode(null)
-        }
-        onSave={(updatedData) => {
-          setNodes((nds) =>
-            nds.map((node) =>
-              node.id ===
-              selectedNode?.id
-                ? {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      ...updatedData,
-                    },
-                  }
-                : node
-            )
-          );
-          
-          setSelectedNode((prev: any) =>
-            prev
-              ? {
-                  ...prev,
-                  data: {
-                    ...prev.data,
-                    ...updatedData,
-                  },
-                }
-              : null
-          );
-        }}
-        onDelete={() => {
-  if (!selectedNode) return;
-
-  setNodes((nds) =>
-    nds.filter(
-      (n) => n.id !== selectedNode.id
-    )
-  );
-
-  setEdges((eds) =>
-    eds.filter(
-      (e) =>
-        e.source !== selectedNode.id &&
-        e.target !== selectedNode.id
-    )
-  );
-
-  setSelectedNode(null);
-}}
-      />
-      <EdgeDrawer
-      theme={theme}
-      edge={selectedEdge}
-  onClose={() =>
-    setSelectedEdge(null)
-  }
-  onSave={(updatedData) => {
-    setEdges((eds) =>
-      eds.map((edge) =>
-        edge.id === selectedEdge.id
-          ? {
-              ...edge,
-              data: {
-                ...edge.data,
-                ...updatedData,
-              },
-            }
-          : edge
-      )
-    );
-  }}
-/>
 
     </div>
   );

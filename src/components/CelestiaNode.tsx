@@ -1,48 +1,86 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
 
 const statusStyles = {
   new: {
     label: "New",
     dot: "bg-zinc-500",
-  },
-  explored: {
-    label: "Explored",
-    dot: "bg-blue-500",
+    ring: "",
   },
   active: {
     label: "Active",
     dot: "bg-yellow-500",
+    ring: "ring-2 ring-yellow-500/40",
   },
   complete: {
     label: "Complete",
     dot: "bg-green-500",
+    ring: "ring-2 ring-green-500/40",
   },
 };
 
-export default function CelestiaNode({ data }: any) {
-  const status =
-    statusStyles[data.status as keyof typeof statusStyles] ??
-    statusStyles.new;
-    {
-  data.progress !== undefined && (
-    <div className="mt-2">
-      <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-green-500"
-          style={{
-            width: `${data.progress}%`,
-          }}
-        />
-      </div>
+export default function CelestiaNode({
+  id,
+  data,
+}: any) {
+  const [hovered, setHovered] =
+    useState(false);
 
-      <div className="text-xs mt-1">
-        {data.progress}%
-      </div>
-    </div>
-  )
-}
+  const [editing, setEditing] =
+    useState(false);
+
+  const [title, setTitle] =
+    useState("");
+
+  const [description, setDescription] =
+    useState("");
+
+  const [date, setDate] =
+    useState("");
+
+  const [progress, setProgress] =
+    useState(0);
+
+  useEffect(() => {
+    setTitle(data.title || "");
+    setDescription(
+      data.description || ""
+    );
+    setDate(data.date || "");
+    setProgress(
+      data.progress || 0
+    );
+  }, [data]);
+
+  const status =
+    progress === 100
+      ? "complete"
+      : progress > 0
+      ? "active"
+      : "new";
+
+  const style =
+    statusStyles[
+      status as keyof typeof statusStyles
+    ];
+
+  const saveNode = () => {
+    data.onUpdateNode?.(id, {
+      title,
+      description,
+      date,
+      progress,
+      status,
+    });
+
+    setEditing(false);
+  };
+
+  const deleteNode = () => {
+    data.onDeleteNode?.(id);
+  };
 
   return (
     <>
@@ -52,15 +90,27 @@ export default function CelestiaNode({ data }: any) {
       />
 
       <div
+        onMouseEnter={() =>
+          setHovered(true)
+        }
+        onMouseLeave={() =>
+          !editing && setHovered(false)
+        }
+        onClick={(e) => {
+          e.stopPropagation();
+          setEditing(true);
+          setHovered(true);
+        }}
         className={`
-          min-w-[180px]
-          rounded-xl
+          min-w-[240px]
+          max-w-[280px]
+          rounded-2xl
           border
-          px-4
-          py-3
-          shadow-lg
+          backdrop-blur-md
           transition-all
           duration-300
+          cursor-pointer
+          shadow-xl
 
           ${
             data.theme === "dark"
@@ -68,36 +118,223 @@ export default function CelestiaNode({ data }: any) {
               : "bg-white border-zinc-300 text-black"
           }
 
+          ${style.ring}
+
           ${
-            data.status === "complete"
-              ? "ring-2 ring-green-500 shadow-green-500/30"
+            hovered
+              ? "scale-[1.02]"
               : ""
           }
         `}
       >
-        <div className="font-semibold">
-          {data.title}
-        </div>
+        <div className="p-4">
 
-        <div
-          className={`
-            mt-2
-            flex
-            items-center
-            gap-2
-            text-xs
-            ${
-              data.theme === "dark"
-                ? "text-zinc-300"
-                : "text-zinc-600"
-            }
-          `}
-        >
+          <div className="flex items-center justify-between">
+            <div className="font-semibold truncate">
+              {title}
+            </div>
+
+            <div
+              className={`w-2 h-2 rounded-full ${style.dot}`}
+            />
+          </div>
+
           <div
-            className={`w-2 h-2 rounded-full ${status.dot}`}
-          />
+            className={`
+              text-xs mt-1
+              ${
+                data.theme === "dark"
+                  ? "text-zinc-400"
+                  : "text-zinc-500"
+              }
+            `}
+          >
+            {style.label}
+          </div>
 
-          {status.label}
+          <div className="mt-3">
+            <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className={`
+                  h-full
+                  transition-all
+                  duration-300
+                  ${style.dot}
+                `}
+                style={{
+                  width: `${progress}%`,
+                }}
+              />
+            </div>
+
+            <div className="text-xs mt-1">
+              {progress}%
+            </div>
+          </div>
+
+          {(hovered || editing) && (
+            <div
+              className="
+                mt-4
+                space-y-3
+                animate-in
+                fade-in
+              "
+            >
+              {!editing ? (
+                <>
+                  {description && (
+                    <p
+                      className="
+                        text-sm
+                        text-zinc-400
+                        whitespace-pre-wrap
+                      "
+                    >
+                      {description}
+                    </p>
+                  )}
+
+                  {date && (
+                    <div className="text-xs text-zinc-500">
+                      {date}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <input
+                    value={title}
+                    onClick={(e) =>
+                      e.stopPropagation()
+                    }
+                    onChange={(e) =>
+                      setTitle(
+                        e.target.value
+                      )
+                    }
+                    className="
+                      w-full
+                      p-2
+                      rounded-lg
+                      bg-zinc-800
+                      text-white
+                      border
+                      border-zinc-700
+                    "
+                  />
+
+                  <textarea
+                    value={description}
+                    onClick={(e) =>
+                      e.stopPropagation()
+                    }
+                    onChange={(e) =>
+                      setDescription(
+                        e.target.value
+                      )
+                    }
+                    rows={3}
+                    className="
+                      w-full
+                      p-2
+                      rounded-lg
+                      bg-zinc-800
+                      text-white
+                      border
+                      border-zinc-700
+                    "
+                  />
+
+                  <input
+                    type="date"
+                    value={date}
+                    onClick={(e) =>
+                      e.stopPropagation()
+                    }
+                    onChange={(e) =>
+                      setDate(
+                        e.target.value
+                      )
+                    }
+                    className="
+                      w-full
+                      p-2
+                      rounded-lg
+                      bg-zinc-800
+                      text-white
+                      border
+                      border-zinc-700
+                    "
+                  />
+
+                  <div>
+                    <div className="text-xs mb-1">
+                      Progress: {progress}%
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={progress}
+                      onClick={(e) =>
+                        e.stopPropagation()
+                      }
+                      onChange={(e) =>
+                        setProgress(
+                          Number(
+                            e.target.value
+                          )
+                        )
+                      }
+                      className="
+                        w-full
+                        accent-blue-500
+                      "
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        saveNode();
+                      }}
+                      className="
+                        flex-1
+                        bg-blue-500
+                        hover:bg-blue-600
+                        text-white
+                        rounded-lg
+                        py-2
+                        transition
+                      "
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNode();
+                      }}
+                      className="
+                        px-3
+                        bg-red-600
+                        hover:bg-red-700
+                        text-white
+                        rounded-lg
+                        transition
+                      "
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

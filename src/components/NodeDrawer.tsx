@@ -17,6 +17,8 @@ export default function NodeDrawer({
   onSave,
   onDelete,
 }: Props) {
+
+    
   const [title, setTitle] = useState("");
   const [description, setDescription] =
     useState("");
@@ -139,71 +141,64 @@ export default function NodeDrawer({
           `}
         />
 
-        <select
-          value={status}
-          onChange={(e) =>
-            setStatus(e.target.value)
-          }
-          className={`
-            w-full
-            p-2
-            rounded
-            ${
-              theme === "dark"
-                ? "bg-zinc-800 text-white"
-                : "bg-zinc-100 text-black"
-            }
-          `}
-        >
-          <option value="new">
-            New
-          </option>
+        
+        <div>
+  <label
+    className={
+      theme === "dark"
+        ? "text-white"
+        : "text-black"
+    }
+  >
+    Progress: {progress}%
+  </label>
 
-          <option value="explored">
-            Explored
-          </option>
+  <input
+    type="range"
+    min="0"
+    max="100"
+    value={progress}
+    onChange={(e) =>
+      setProgress(
+        Number(e.target.value)
+      )
+    }
+   className="
+  w-full
+  accent-blue-500
+  cursor-pointer
+"
+  />
+</div>  
 
-          <option value="active">
-            Active
-          </option>
 
-          <option value="complete">
-            Complete
-          </option>
-        </select>
- <input
-  type="range"
-  min="0"
-  max="100"
-  value={progress}
-  onChange={(e) =>
-    setProgress(
-      Number(e.target.value)
-    )
-  }
-/>
-
-<div>
-  {progress}%
-</div>
         <button
-          onClick={() =>
-            onSave({
-              title,
-              description,
-              date,
-              status,
-            })
-          }
-          className="
-            w-full
-            bg-blue-500
-            text-white
-            rounded
-            p-2
-          "
+            onClick={() => {
+                let calculatedStatus = "new";
+
+                if (progress === 100) {
+                    calculatedStatus = "complete";
+                } else if (progress > 0) {
+                    calculatedStatus = "active";
+                }
+
+                onSave({
+                    title,
+                    description,
+                    date,
+                    status: calculatedStatus,
+                    progress,
+                });
+            }}
+            className="
+                w-full
+                bg-blue-500
+                text-white
+                rounded
+                p-2
+            "
         >
-          Save
+            Save
         </button>
 
         <button
